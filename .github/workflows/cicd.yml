@@ -7,13 +7,10 @@ name: CI/CD Workflow
 # -------------------------------
 # Triggers
 # -------------------------------
-on: 
+on:
   push:
     branches:
-      - 'feature/**'                                     # Run workflow on all feature/* branches
-  pull_request:
-    branches:
-      - 'main'                                           # Run workflow on PRs targeting main branch
+      - main                                         # Run workflow on PRs targeting main branch
 
 
 # -------------------------------
