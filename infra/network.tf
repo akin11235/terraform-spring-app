@@ -117,6 +117,24 @@ resource "aws_route_table" "private_route_table_1" {
   }
 }
 
+# ----------------------------
+# Public Route Table - Public Subnet 2
+# ----------------------------
+resource "aws_route_table" "public_route_table_2" {
+  vpc_id = aws_vpc.main_vpc.id
+
+  # Default route to Internet Gateway
+  route {
+    cidr_block = "0.0.0.0/0"
+    gateway_id = aws_internet_gateway.main_igw.id
+  }
+
+  tags = {
+    Name = "Public-Route-Table-2"
+  }
+}
+
+
 # Private Route Table - Uses NAT Gateway for outbound internet access
 resource "aws_route" "private_nat_route" {
   route_table_id         = aws_route_table.private_route_table_1.id
@@ -151,6 +169,12 @@ resource "aws_nat_gateway" "nat_gw" {
 resource "aws_route_table_association" "public_assoc" {
   subnet_id      = aws_subnet.public_subnet.id
   route_table_id = aws_route_table.public_route_table_1.id
+}
+
+# Associate Public Subnet 2 with its route table
+resource "aws_route_table_association" "public_assoc_2" {
+  subnet_id      = aws_subnet.public_subnet_2.id
+  route_table_id = aws_route_table.public_route_table_2.id
 }
 
 # Private subnet A association

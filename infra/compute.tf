@@ -33,16 +33,6 @@ resource "local_file" "private_key_file" {
   file_permission = "0400"
 }
 
-# Output the key name for reference
-# output "key_pair_name" {
-#   value = aws_key_pair.java_app_key_pair.key_name
-# }
-
-# Output the EC2 instance public IP for SSH connection
-# output "instance_public_ip" {
-#   value = aws_instance.app_server.public_ip
-# }
-
 # EC2 using the key pair
 resource "aws_instance" "app_server" {
   provider        = aws.user1
@@ -110,26 +100,25 @@ resource "aws_launch_template" "app_server_lt" {
 
   user_data = base64encode(<<-EOF
   #!/bin/bash
-  # Update packages
   yum update -y
 
   # Install Java 17 and AWS CLI
   amazon-linux-extras enable corretto17 -y
   yum install -y java-17-amazon-corretto awscli
 
-  # Directory for the Spring Boot app
+  # Create app directory
   mkdir -p /home/ec2-user/app
   cd /home/ec2-user/app
 
   # Pull latest JAR from S3
   aws s3 cp s3://${var.s3_bucket_name}/myapp.jar /home/ec2-user/app/myapp.jar
 
-  # Kill any existing instance of the app
+  # Kill existing app (if any)
   pkill -f myapp.jar || true
 
-  # Start the Spring Boot app in the background
-  nohup java -jar /home/ec2-user/app/myapp.jar > /home/ec2-user/app/app.log 2>&1 &
-EOF
+  # Start Spring Boot on port 8080
+  nohup java -jar /home/ec2-user/app/myapp.jar --server.port=8080 > /home/ec2-user/app/app.log 2>&1 &
+  EOF
   )
 
   # Tags applied to instances launched from this template
@@ -189,13 +178,13 @@ resource "aws_lb" "app_alb" {
 # ----------------------------
 resource "aws_lb_target_group" "app_tg" {
   name        = "app-tg"
-  port        = 80 # Must match EC2 listening port
+  port        = 8080 # Must match EC2 listening port
   protocol    = "HTTP"
   vpc_id      = aws_vpc.main_vpc.id
   target_type = "instance"
 
   health_check {
-    path                = "/" # Nginx default page
+    path                = "/actuator/health" # Spring Boot health endpoint
     protocol            = "HTTP"
     matcher             = "200"
     interval            = 30
@@ -209,56 +198,6 @@ resource "aws_lb_target_group" "app_tg" {
   }
 }
 
-# ----------------------------
-# ALB HTTPS Listener
-# ----------------------------
-# resource "aws_lb_listener" "https_listener" {
-#   load_balancer_arn = aws_lb.app_alb.arn
-#   port              = 443
-#   protocol          = "HTTPS"
-#   ssl_policy        = "ELBSecurityPolicy-2016-08"
-#   certificate_arn   = data.aws_acm_certificate.app_cert.arn
-
-#   default_action {
-#     type             = "forward"
-#     target_group_arn = aws_lb_target_group.app_tg.arn
-#   }
-# }
-
-# # Optional HTTP listener for redirect to HTTPS
-# resource "aws_lb_listener" "http_listener" {
-#   load_balancer_arn = aws_lb.app_alb.arn
-#   port              = 80
-#   protocol          = "HTTP"
-
-#   default_action {
-#     type = "redirect"
-
-#     redirect {
-#       port        = "443"
-#       protocol    = "HTTPS"
-#       status_code = "HTTP_301"
-#     }
-#   }
-# }
-
-
-
-# # ----------------------------
-# # ALB HTTPS Listener using dynamic certificate ARN
-# # ----------------------------
-# resource "aws_lb_listener" "https_listener" {
-#   load_balancer_arn = aws_lb.app_alb.arn
-#   port              = 443
-#   protocol          = "HTTPS"
-#   ssl_policy        = "ELBSecurityPolicy-2016-08"
-#   certificate_arn   = data.aws_acm_certificate.app_cert.arn
-
-#   default_action {
-#     type             = "forward"
-#     target_group_arn = aws_lb_target_group.app_tg.arn
-#   }
-# }
 
 # ----------------------------
 # HTTP Listener
@@ -301,9 +240,4 @@ resource "aws_autoscaling_group" "app_asg" {
     propagate_at_launch = true
   }
 
-  tag {
-    key                 = "Environment"
-    value               = "Prod"
-    propagate_at_launch = true
-  }
 }

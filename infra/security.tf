@@ -107,14 +107,14 @@ resource "aws_security_group" "ec2_sg" {
 }
 
 # Allow HTTP traffic from ALB for health checks and app
-resource "aws_security_group_rule" "ec2_ingress_from_alb_http" {
-  type                     = "ingress"
-  from_port                = 80
-  to_port                  = 80
-  protocol                 = "tcp"
-  security_group_id        = aws_security_group.ec2_sg.id
-  source_security_group_id = aws_security_group.alb_sg.id
-}
+# resource "aws_security_group_rule" "ec2_ingress_from_alb_http" {
+#   type                     = "ingress"
+#   from_port                = 80
+#   to_port                  = 80
+#   protocol                 = "tcp"
+#   security_group_id        = aws_security_group.ec2_sg.id
+#   source_security_group_id = aws_security_group.alb_sg.id
+# }
 
 # Ingress: only from ALB SG on app port 8080
 resource "aws_security_group_rule" "ec2_ingress_from_alb" {
