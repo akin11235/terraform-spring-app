@@ -34,7 +34,7 @@ jobs:
 
       # Step 3: Build the app
       - name: Build with Maven
-        working-directory: demo
+        working-directory: demo-spring-app
         run: mvn clean package
 
 
