@@ -59,9 +59,9 @@ jobs:
         run: aws s3 cp target/myapp.jar s3://artifacts-bucket-cadb77db/myapp.jar
 
       # # Optional: trigger rolling update for ASG to refresh running instances
-      # - name: Trigger ASG rolling update
-      #   run: |
-      #     aws autoscaling start-instance-refresh \
-      #       --auto-scaling-group-name app-asg \
-      #       --preferences '{"MinHealthyPercentage":50}' \
-      #       --region us-east-1
+      - name: Trigger ASG rolling update
+        run: |
+          aws autoscaling start-instance-refresh \
+            --auto-scaling-group-name app-asg \
+            --preferences '{"MinHealthyPercentage":50}' \
+            --region us-east-1
