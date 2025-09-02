@@ -55,8 +55,9 @@ jobs:
 
       # Step 6: Upload JAR to S3
       - name: Upload artifact to S3
+        working-directory: demo-spring-app
         run: |
-          JAR_FILE=$(find demo-spring-app/demo/target -name "*.jar" | head -n 1)
+          JAR_FILE=$(find target -name "*.jar" | head -n 1)
           echo "Uploading $JAR_FILE to S3"
           aws s3 cp $JAR_FILE s3://artifacts-bucket-spring-app/
 
