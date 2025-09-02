@@ -143,14 +143,14 @@ resource "aws_db_instance" "postgres" {
   }
 }
 
-# S3 bucket for storing application artifacts
-# ----------------------------
-# Bucket (to be accessed by EC2)
-# ----------------------------
-resource "random_id" "bucket_suffix" {
-  byte_length = 4 # 4 bytes → 8 hex characters
-}
+# # S3 bucket for storing application artifacts
+# # ----------------------------
+# # Bucket (to be accessed by EC2)
+# # ----------------------------
+# resource "random_id" "bucket_suffix" {
+#   byte_length = 4 # 4 bytes → 8 hex characters
+# }
 
-resource "aws_s3_bucket" "artifacts" {
-  bucket = "artifacts-bucket-${random_id.bucket_suffix.hex}"
-}
+# resource "aws_s3_bucket" "artifacts" {
+#   bucket = "artifacts-bucket-${random_id.bucket_suffix.hex}"
+# }

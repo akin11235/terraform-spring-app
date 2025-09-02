@@ -23,5 +23,5 @@
 # egress_protocol    = "-1"
 # # egress_cidr_blocks = ["0.0.0.0/0"]
 
-s3_bucket_name = "artifacts-bucket-1234abcd"
+s3_bucket_name = "artifacts-bucket-spring-app"
 acm_domain     = "mydomain.com"

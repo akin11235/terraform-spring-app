@@ -166,7 +166,7 @@ variable "base_instance_name" {
 variable "s3_bucket_name" {
   description = "Name of the S3 bucket for app artifacts"
   type        = string
-  default     = "" # optional default if you want
+  default     = "artifacts-bucket-spring-app"
 }
 
 variable "acm_domain" {
@@ -174,3 +174,4 @@ variable "acm_domain" {
   type        = string
   default     = "example.com" # or your actual domain
 }
+

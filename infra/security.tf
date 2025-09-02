@@ -36,14 +36,14 @@ resource "aws_iam_role_policy" "ec2_s3_access_policy" {
         Effect = "Allow"
         Action = ["s3:GetObject", "s3:PutObject"]
         Resource = [
-          "arn:aws:s3:::${aws_s3_bucket.artifacts.id}/*"
+          "arn:aws:s3:::${var.s3_bucket_name}/*"
         ]
       },
       {
         Effect = "Allow"
         Action = ["s3:ListBucket"]
         Resource = [
-          "arn:aws:s3:::${aws_s3_bucket.artifacts.id}"
+          "arn:aws:s3:::${var.s3_bucket_name}"
         ]
       }
     ]

@@ -34,6 +34,7 @@ jobs:
 
       # Step 3: Build the app
       - name: Build with Maven
+        working-directory: demo
         run: mvn clean package
 
 
@@ -53,7 +54,7 @@ jobs:
 
       # Step 6: Upload JAR to S3
       - name: Upload artifact to S3
-        run: aws s3 cp target/myapp.jar s3://artifacts-bucket-cadb77db/myapp.jar
+        run: aws s3 cp target/my-app.jar s3://artifacts-bucket-spring-app/my-app.jar
 
       # # Optional: trigger rolling update for ASG to refresh running instances
       - name: Trigger ASG rolling update
