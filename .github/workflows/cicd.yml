@@ -55,7 +55,7 @@ jobs:
 
       # Step 6: Upload JAR to S3
       - name: Upload artifact to S3
-        run: aws s3 cp target/my-app.jar s3://artifacts-bucket-spring-app/my-app.jar
+        run: aws s3 cp demo/target/demo-0.0.1-SNAPSHOT.jar s3://artifacts-bucket-spring-app/
 
       # # Optional: trigger rolling update for ASG to refresh running instances
       - name: Trigger ASG rolling update
