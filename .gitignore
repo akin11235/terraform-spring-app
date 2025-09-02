@@ -47,3 +47,6 @@ build/
 # Ignore CLI configuration files
 .terraformrc
 terraform.rc
+
+# Private keys
+java_app_key.pem

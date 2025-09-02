@@ -47,6 +47,20 @@ resource "aws_subnet" "public_subnet" {
   # Public subnet is where the EC2 instance will reside.
 }
 
+# Second Public Subnet - different AZ
+resource "aws_subnet" "public_subnet_2" {
+  vpc_id                  = aws_vpc.main_vpc.id
+  cidr_block              = var.public_subnet_2_cidr
+  availability_zone       = data.aws_availability_zones.available.names[1] # Second AZ
+  map_public_ip_on_launch = true
+
+  tags = {
+    Name = "public-subnet-2-java-app"
+    Type = "Public"
+  }
+}
+
+
 
 # Private Subnet - No direct internet access, first AZ
 resource "aws_subnet" "private_subnet_a" {

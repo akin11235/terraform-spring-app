@@ -95,12 +95,10 @@ data "aws_instances" "asg_instances" {
 resource "aws_db_subnet_group" "main" {
   name        = "webapp-db-subnet-group"
   description = "Subnet group for WebApp RDS instance"
-  # RDS requires subnets in at least 2 different availability zones
-  # This enables Multi-AZ deployment for high availability
   subnet_ids = [
     aws_subnet.private_subnet_a.id,
     aws_subnet.private_subnet_b.id
-  ] # must be in at least 2 AZs
+  ]
 
   tags = {
     Name = "WebApp DB Subnet Group"
@@ -108,6 +106,10 @@ resource "aws_db_subnet_group" "main" {
 }
 
 
+
+# ----------------------------
+# PostgreSQL RDS Database Instance
+# ----------------------------
 # ----------------------------
 # PostgreSQL RDS Database Instance
 # ----------------------------
@@ -116,7 +118,7 @@ resource "aws_db_instance" "postgres" {
   allocated_storage = 20
   storage_type      = "gp2"
   engine            = "postgres"
-  engine_version    = "14.9"
+  engine_version    = "14.15"
   instance_class    = "db.t3.micro"
 
   db_name  = "webapp"
@@ -134,7 +136,7 @@ resource "aws_db_instance" "postgres" {
   skip_final_snapshot = true
   deletion_protection = false
 
-  multi_az = false # set to true in production for high availability
+  multi_az = false
 
   tags = {
     Name = "WebApp-PostgreSQL"

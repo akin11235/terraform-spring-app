@@ -109,17 +109,27 @@ resource "aws_launch_template" "app_server_lt" {
   }
 
   user_data = base64encode(<<-EOF
-    #!/bin/bash
-    # Update packages
-    yum update -y
+  #!/bin/bash
+  # Update packages
+  yum update -y
 
-    # Start Nginx
-    systemctl enable nginx
-    systemctl start nginx
+  # Install Java 17 and AWS CLI
+  amazon-linux-extras enable corretto17 -y
+  yum install -y java-17-amazon-corretto awscli
 
-    # Optional: Pull app artifact from S3
-    aws s3 cp s3://${var.s3_bucket_name}/myapp.jar /home/ec2-user/
-  EOF
+  # Directory for the Spring Boot app
+  mkdir -p /home/ec2-user/app
+  cd /home/ec2-user/app
+
+  # Pull latest JAR from S3
+  aws s3 cp s3://${var.s3_bucket_name}/myapp.jar /home/ec2-user/app/myapp.jar
+
+  # Kill any existing instance of the app
+  pkill -f myapp.jar || true
+
+  # Start the Spring Boot app in the background
+  nohup java -jar /home/ec2-user/app/myapp.jar > /home/ec2-user/app/app.log 2>&1 &
+EOF
   )
 
   # Tags applied to instances launched from this template
@@ -162,7 +172,10 @@ resource "aws_lb" "app_alb" {
   internal           = false
   load_balancer_type = "application"
   security_groups    = [aws_security_group.alb_sg.id]
-  subnets            = [aws_subnet.public_subnet.id] # your existing public subnet
+  subnets = [
+    aws_subnet.public_subnet.id,
+    aws_subnet.public_subnet_2.id
+  ]
 
   enable_deletion_protection = false
 
@@ -176,13 +189,13 @@ resource "aws_lb" "app_alb" {
 # ----------------------------
 resource "aws_lb_target_group" "app_tg" {
   name        = "app-tg"
-  port        = 80
+  port        = 80 # Must match EC2 listening port
   protocol    = "HTTP"
-  vpc_id      = aws_vpc.main_vpc.id # your existing VPC
+  vpc_id      = aws_vpc.main_vpc.id
   target_type = "instance"
 
   health_check {
-    path                = "/"
+    path                = "/" # Nginx default page
     protocol            = "HTTP"
     matcher             = "200"
     interval            = 30
@@ -195,7 +208,6 @@ resource "aws_lb_target_group" "app_tg" {
     Name = "app-tg"
   }
 }
-
 
 # ----------------------------
 # ALB HTTPS Listener
