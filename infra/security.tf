@@ -107,14 +107,14 @@ resource "aws_security_group" "ec2_sg" {
 }
 
 # Allow HTTP traffic from ALB for health checks and app
-# resource "aws_security_group_rule" "ec2_ingress_from_alb_http" {
-#   type                     = "ingress"
-#   from_port                = 80
-#   to_port                  = 80
-#   protocol                 = "tcp"
-#   security_group_id        = aws_security_group.ec2_sg.id
-#   source_security_group_id = aws_security_group.alb_sg.id
-# }
+resource "aws_security_group_rule" "ec2_ingress_from_alb_http" {
+  type                     = "ingress"
+  from_port                = 80
+  to_port                  = 80
+  protocol                 = "tcp"
+  security_group_id        = aws_security_group.ec2_sg.id
+  source_security_group_id = aws_security_group.alb_sg.id
+}
 
 # Ingress: only from ALB SG on app port 8080
 resource "aws_security_group_rule" "ec2_ingress_from_alb" {
@@ -162,4 +162,25 @@ resource "aws_security_group_rule" "rds_egress" {
   protocol          = "-1"
   security_group_id = aws_security_group.rds_sg.id
   cidr_blocks       = ["0.0.0.0/0"]
+}
+
+# Add this rule to allow ALB health checks to private instances
+resource "aws_security_group_rule" "alb_to_private_instances" {
+  type                     = "egress"
+  from_port                = 8080
+  to_port                  = 8080
+  protocol                 = "tcp"
+  security_group_id        = aws_security_group.alb_sg.id
+  source_security_group_id = aws_security_group.ec2_sg.id
+}
+
+# Add SSH access from jump server to EC2 instances
+resource "aws_security_group_rule" "ec2_ssh_from_jump" {
+  type                     = "ingress"
+  from_port                = 22
+  to_port                  = 22
+  protocol                 = "tcp"
+  security_group_id        = aws_security_group.ec2_sg.id
+  source_security_group_id = aws_security_group.jump_sg.id
+  description              = "SSH access from jump server"
 }

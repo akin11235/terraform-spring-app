@@ -46,7 +46,7 @@ resource "aws_instance" "app_server" {
   user_data = <<-EOF
               #!/bin/bash
               sudo yum update -y
-              sudo amazon-linux-extras enable nginx1 -y
+              sudo yum install -y java-17-amazon-corretto awscli curl
               sudo yum install -y nginx
               sudo systemctl enable nginx
               sudo systemctl start nginx
@@ -98,28 +98,74 @@ resource "aws_launch_template" "app_server_lt" {
     name = aws_iam_instance_profile.ec2_s3_profile.name
   }
 
-  user_data = base64encode(<<-EOF
-  #!/bin/bash
-  yum update -y
+user_data = base64encode(<<-EOF
+#!/bin/bash
+# Enhanced user data script with better logging and health check validation
 
-  # Install Java 17 and AWS CLI
-  amazon-linux-extras enable corretto17 -y
-  yum install -y java-17-amazon-corretto awscli
+# -----------------------------
+# Basic setup with logging
+# -----------------------------
+exec > >(tee /var/log/user-data.log) 2>&1
+echo "Starting user data script at $(date)"
 
-  # Create app directory
-  mkdir -p /home/ec2-user/app
-  cd /home/ec2-user/app
+yum update -y
+amazon-linux-extras enable corretto17 -y
+yum install -y java-17-amazon-corretto awscli curl
 
-  # Pull latest JAR from S3
-  aws s3 cp s3://${var.s3_bucket_name}/myapp.jar /home/ec2-user/app/myapp.jar
+# -----------------------------
+# App setup
+# -----------------------------
+APP_DIR=/home/ec2-user/app
+mkdir -p $APP_DIR
+cd $APP_DIR
 
-  # Kill existing app (if any)
-  pkill -f myapp.jar || true
+echo "Downloading JAR from S3..."
+if aws s3 cp s3://${var.s3_bucket_name}/demo-0.0.1-SNAPSHOT.jar $APP_DIR/myapp.jar; then
+    echo "JAR downloaded successfully"
+else
+    echo "Failed to download JAR from S3" >&2
+    exit 1
+fi
 
-  # Start Spring Boot on port 8080
-  nohup java -jar /home/ec2-user/app/myapp.jar --server.port=8080 > /home/ec2-user/app/app.log 2>&1 &
-  EOF
-  )
+# Ensure previous app process is stopped
+echo "Stopping any existing app processes..."
+pkill -f myapp.jar || true
+sleep 5
+
+# Start Spring Boot app with proper JVM settings
+echo "Starting Spring Boot application..."
+nohup java -jar \
+    -Xms256m -Xmx512m \
+    -Dserver.port=8080 \
+    -Dlogging.level.org.springframework.boot.actuate=DEBUG \
+    $APP_DIR/myapp.jar > $APP_DIR/app.log 2>&1 &
+
+APP_PID=$!
+echo "Started Spring Boot app with PID: $APP_PID"
+
+# Wait for application to start and verify health endpoint
+echo "Waiting for application to be ready..."
+for i in {1..60}; do
+    sleep 10
+    echo "Health check attempt $i/60..."
+    
+    if curl -f -s http://localhost:8080/actuator/health | grep -q '"status":"UP"'; then
+    echo "Application is healthy and ready!"
+    echo "Health check response:"
+    curl -s http://localhost:8080/actuator/health | python -m json.tool || echo "JSON parsing failed"
+    break
+elif curl -f -s http://localhost:8080/health >/dev/null 2>&1; then
+    echo "Application is healthy (basic health endpoint)!"
+    break
+elif curl -f -s http://localhost:8080/ >/dev/null 2>&1; then
+    echo "Application is responding on root path!"
+    break
+fi
+done
+
+echo "User data script completed successfully at $(date)"
+EOF
+)
 
   # Tags applied to instances launched from this template
   tag_specifications {
@@ -187,10 +233,11 @@ resource "aws_lb_target_group" "app_tg" {
     path                = "/actuator/health" # Spring Boot health endpoint
     protocol            = "HTTP"
     matcher             = "200"
-    interval            = 30
+    interval            = 60
     healthy_threshold   = 2
-    unhealthy_threshold = 2
-    timeout             = 5
+    unhealthy_threshold = 3
+    timeout             = 10
+    port                = "8080"            # Explicitly specify port
   }
 
   tags = {

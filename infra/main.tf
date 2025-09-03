@@ -154,3 +154,42 @@ resource "aws_db_instance" "postgres" {
 # resource "aws_s3_bucket" "artifacts" {
 #   bucket = "artifacts-bucket-${random_id.bucket_suffix.hex}"
 # }
+
+#  JUMP SERVER
+resource "aws_instance" "jump_server" {
+  ami           = "ami-0c02fb55956c7d316" # Amazon Linux 2 in us-east-1
+  instance_type = "t3.micro"
+  subnet_id     = aws_subnet.public_subnet.id
+  key_name      = aws_key_pair.java_app_key_pair.key_name
+
+  vpc_security_group_ids = [
+    aws_security_group.jump_sg.id
+  ]
+
+  tags = {
+    Name = "jump-server"
+  }
+}
+
+resource "aws_security_group" "jump_sg" {
+  name        = "jump-sg"
+  description = "Allow SSH access to jump server"
+  vpc_id      = aws_vpc.main_vpc.id
+
+  ingress {
+    description      = "SSH from my IP"
+    from_port        = 22
+    to_port          = 22
+    protocol         = "tcp"
+    cidr_blocks      = ["24.141.173.166/32"]
+  }
+
+  egress {
+    description = "Allow all outbound"
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+}
+
