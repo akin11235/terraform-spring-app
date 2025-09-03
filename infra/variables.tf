@@ -20,53 +20,55 @@ variable "aws_region" {
 
 
 # Ingress
-variable "ingress_rule_protocol" {
-  description = "Protocol for ingress traffic (TCP, UDP, ICMP, or -1 for all)"
-  type        = string
-  default     = "tcp"
-}
+# variable "ingress_rule_protocol" {
+#   description = "Protocol for ingress traffic (TCP, UDP, ICMP, or -1 for all)"
+#   type        = string
+#   default     = "tcp"
+# }
 
-variable "ingress_port_start" {
-  description = "Starting port for ingress rule"
-  type        = number
-  default     = 22
-}
+# variable "ingress_port_start" {
+#   description = "Starting port for ingress rule"
+#   type        = number
+#   default     = 22
+# }
 
-variable "ingress_port_end" {
-  description = "Ending port for ingress rule"
-  type        = number
-  default     = 22
-}
+# variable "ingress_port_end" {
+#   description = "Ending port for ingress rule"
+#   type        = number
+#   default     = 22
+# }
 
-variable "ingress_source_cidrs" {
-  description = "CIDR blocks allowed to connect inbound"
-  type        = list(string)
-  default     = ["0.0.0.0/0"] # tighten for security
-}
+# variable "ingress_source_cidrs" {
+#   description = "CIDR blocks allowed to connect inbound"
+#   type        = list(string)
+#   default     = ["0.0.0.0/0"] # tighten for security
+# }
 
-variable "egress_rule_protocol" {
-  description = "Protocol for egress traffic"
-  type        = string
-  default     = "-1"
-}
+# variable "egress_rule_protocol" {
+#   description = "Protocol for egress traffic"
+#   type        = string
+#   default     = "-1"
+# }
 
-variable "egress_dest_cidrs" {
-  description = "CIDR blocks to allow egress traffic to"
-  type        = list(string)
-  default     = ["0.0.0.0/0"] # open to the internet
-}
+# variable "egress_dest_cidrs" {
+#   description = "CIDR blocks to allow egress traffic to"
+#   type        = list(string)
+#   default     = ["0.0.0.0/0"] # open to the internet
+# }
 
-variable "egress_port_start" {
-  description = "Starting port for egress rule"
-  type        = number
-  default     = 0 # all ports
-}
+# variable "egress_port_start" {
+#   description = "Starting port for egress rule"
+#   type        = number
+#   default     = 0 # all ports
+# }
 
-variable "egress_port_end" {
-  description = "Ending port for egress rule"
-  type        = number
-  default     = 0 # all ports
-}
+# variable "egress_port_end" {
+#   description = "Ending port for egress rule"
+#   type        = number
+#   default     = 0 # all ports
+# }
+
+
 
 
 # Used for route table (string variable for route tables)

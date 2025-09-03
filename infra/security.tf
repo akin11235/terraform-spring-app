@@ -1,16 +1,12 @@
 # security groups, IAM roles
 
-
-
-# ----------------------------
-# IAM role
-# ----------------------------
 # ----------------------------
 # RANDOM ID for IAM role suffix
 # ----------------------------
 resource "random_id" "role_suffix" {
   byte_length = 2 # 2 bytes → 4 hex characters
 }
+
 
 
 resource "aws_iam_role" "ec2_s3_access" {
@@ -50,11 +46,14 @@ resource "aws_iam_role_policy" "ec2_s3_access_policy" {
   })
 }
 
+
+# ----------------------------
+# Instance Profile
+# ----------------------------
 resource "aws_iam_instance_profile" "ec2_s3_profile" {
   name = "EC2-S3-InstanceProfile"
   role = aws_iam_role.ec2_s3_access.name
 }
-
 
 
 
