@@ -36,22 +36,61 @@ resource "local_file" "private_key_file" {
 # EC2 using the key pair
 resource "aws_instance" "app_server" {
   provider        = aws.user1
-  ami             = "ami-00ca32bbc84273381"
+  # ami             = "ami-00ca32bbc84273381"
+  ami             = "ami-0c02fb55956c7d316" 
   instance_type   = var.instance_type
   subnet_id       = aws_subnet.public_subnet.id
   security_groups = [aws_security_group.ec2_sg.id]
   key_name        = aws_key_pair.java_app_key_pair.key_name
 
-  # User Data: Install software & prepare EBS
+
+# User Data: Install software 
+
+  # User Data: Install Nginx & AWS CLI, add sample page
   user_data = <<-EOF
-              #!/bin/bash
-              sudo yum update -y
-              sudo yum install -y java-17-amazon-corretto awscli curl
-              sudo yum install -y nginx
-              sudo systemctl enable nginx
-              sudo systemctl start nginx
-              # Optionally install certbot for HTTPS
-              EOF
+    #!/bin/bash
+    # Clean yum cache and update
+    sudo yum clean all
+    sudo yum update -y
+
+    # Install Nginx if not already installed
+    if ! command -v nginx >/dev/null 2>&1; then
+      sudo amazon-linux-extras enable nginx1 -y
+      sudo yum install -y nginx
+    fi
+
+    # Install AWS CLI (if not already installed)
+    if ! command -v aws >/dev/null 2>&1; then
+      sudo yum install -y awscli
+    fi
+
+    # Install Java 17 (Amazon Corretto) if not already installed
+  if ! command -v java >/dev/null 2>&1; then
+    sudo yum install -y java-17-amazon-corretto
+  fi
+
+    # Start and enable Nginx
+    sudo systemctl start nginx
+    sudo systemctl enable nginx
+
+    
+  # Verify Java installation
+  java -version
+
+    # Add a sample HTML page
+    sudo tee /usr/share/nginx/html/index.html > /dev/null <<'HTML'
+<!DOCTYPE html>
+<html>
+<head>
+<title>Test Page</title>
+</head>
+<body>
+<h1>Hello from EC2!</h1>
+<p>This page confirms Nginx is running.</p>
+</body>
+</html>
+HTML
+EOF
 
   tags = {
     Name = var.instance_name
@@ -100,7 +139,10 @@ resource "aws_launch_template" "app_server_lt" {
 
 user_data = base64encode(<<-EOF
 #!/bin/bash
-# Enhanced user data script with better logging and health check validation
+# -----------------------------
+# Launch Template User Data
+# -----------------------------
+# Enhanced user data script with logging and health check validation
 
 # -----------------------------
 # Basic setup with logging
@@ -108,9 +150,13 @@ user_data = base64encode(<<-EOF
 exec > >(tee /var/log/user-data.log) 2>&1
 echo "Starting user data script at $(date)"
 
-yum update -y
-amazon-linux-extras enable corretto17 -y
-yum install -y java-17-amazon-corretto awscli curl
+
+
+# -----------------------------
+# Verify Java installation
+# -----------------------------
+echo "Checking Java version..."
+java -version || { echo "Java not found!"; exit 1; }
 
 # -----------------------------
 # App setup
@@ -119,6 +165,7 @@ APP_DIR=/home/ec2-user/app
 mkdir -p $APP_DIR
 cd $APP_DIR
 
+# Download latest JAR from S3 (optional if you want latest updates)
 echo "Downloading JAR from S3..."
 if aws s3 cp s3://${var.s3_bucket_name}/demo-0.0.1-SNAPSHOT.jar $APP_DIR/myapp.jar; then
     echo "JAR downloaded successfully"
@@ -145,22 +192,15 @@ echo "Started Spring Boot app with PID: $APP_PID"
 
 # Wait for application to start and verify health endpoint
 echo "Waiting for application to be ready..."
+    
+    # Health check
 for i in {1..60}; do
     sleep 10
     echo "Health check attempt $i/60..."
-    
     if curl -f -s http://localhost:8080/actuator/health | grep -q '"status":"UP"'; then
-    echo "Application is healthy and ready!"
-    echo "Health check response:"
-    curl -s http://localhost:8080/actuator/health | python -m json.tool || echo "JSON parsing failed"
-    break
-elif curl -f -s http://localhost:8080/health >/dev/null 2>&1; then
-    echo "Application is healthy (basic health endpoint)!"
-    break
-elif curl -f -s http://localhost:8080/ >/dev/null 2>&1; then
-    echo "Application is responding on root path!"
-    break
-fi
+        echo "Application is healthy and ready!"
+        break
+    fi
 done
 
 echo "User data script completed successfully at $(date)"

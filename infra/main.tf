@@ -157,7 +157,8 @@ resource "aws_db_instance" "postgres" {
 
 #  JUMP SERVER
 resource "aws_instance" "jump_server" {
-  ami           = "ami-0c02fb55956c7d316" # Amazon Linux 2 in us-east-1
+  # ami           = "ami-0c02fb55956c7d316" # Amazon Linux 2 in us-east-1
+  ami           = "ami-0c02fb55956c7d316" 
   instance_type = "t3.micro"
   subnet_id     = aws_subnet.public_subnet.id
   key_name      = aws_key_pair.java_app_key_pair.key_name

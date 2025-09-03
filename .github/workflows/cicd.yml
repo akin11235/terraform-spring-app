@@ -64,7 +64,18 @@ jobs:
       # # Optional: trigger rolling update for ASG to refresh running instances
       - name: Trigger ASG rolling update
         run: |
-          aws autoscaling start-instance-refresh \
+          REFRESH_IN_PROGRESS=$(aws autoscaling describe-instance-refreshes \
             --auto-scaling-group-name app-asg \
-            --preferences '{"MinHealthyPercentage":50}' \
-            --region us-east-1
+            --region us-east-1 \
+            --query "InstanceRefreshes[?Status=='InProgress']" \
+            --output text)
+
+          if [ -n "$REFRESH_IN_PROGRESS" ]; then
+            echo "An Instance Refresh is already in progress for app-asg. Skipping..."
+          else
+            echo "Starting new Instance Refresh for app-asg..."
+            aws autoscaling start-instance-refresh \
+              --auto-scaling-group-name app-asg \
+              --preferences '{"MinHealthyPercentage":50}' \
+              --region us-east-1
+          fi
